@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-type" content="text/html; charset=utf-8">
+    <title>Example Mocha Test</title>
+    <link rel="stylesheet" href="./lib/css/mocha.css" />
+</head>
+<body>
+    <!-- Required for browser reporter -->
+    <div id="mocha"></div>
+    
+    <!-- mocha -->
+    <script src="./lib/js/mocha.js"></script>
+    <script>
+        // This will be overridden by mocha-helper if you run with grunt
+        mocha.setup('bdd');
+    </script>
+    
+    <!-- Include your assertion lib of choice -->
+    <script src="./lib/js/chai.js"></script>
+    <script>
+        // Setup chai
+        chai.should();
+    </script>
+    
+    <!-- Include anything you want to test -->
+    <script src="../tmp/master.concat.js"></script>
+    
+    <!-- Spec files -->
+    <script src="./specs/utils.js"></script>
+
+    <!-- run mocha -->
+    <script>
+        // If tests run in a real browser
+        // Can alternatively do a check on window.PHANTOMJS
+        if (navigator.userAgent.indexOf('PhantomJS') < 0) {
+            mocha
+                // .globals(['Wombat', 'Apple']) // acceptable globals
+                .run();
+        } 
+    </script>
+</body>
+</html>

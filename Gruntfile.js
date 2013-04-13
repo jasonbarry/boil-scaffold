@@ -10,19 +10,17 @@ module.exports = function(grunt) {
       '<%= pkg.homepage ? "* " + pkg.homepage + "\\n" : "" %>' +
       '* Copyright (c) <%= grunt.template.today("yyyy") %> <%= pkg.author.name %>;' +
       ' Licensed <%= _.pluck(pkg.licenses, "type").join(", ") %> */\n',
-    src: {
-      js: './src/js/*.js', 
-      scss: './src/scss/zmain.scss', 
-    }, 
-    tmp: {
-      js: './tmp/master.js', 
-      css: './tmp/master.css'
-    }, 
-    dest: {
-      js: './dist/scripts/master.min.js', 
-      css: './dist/styles/master.min.css'
-    }
     // Task configuration.
+    watch: {
+      js: {
+        files: ['./src/js/*.js'], 
+        tasks: ['js']
+      }, 
+      sass: {
+        files: ['./src/scss/*.scss'],
+        tasks: ['css']
+      }
+    }, 
     jshint: {
       options: {
         curly: true,
@@ -39,7 +37,7 @@ module.exports = function(grunt) {
         browser: true,
         globals: {}
       },
-      all: {
+      files: {
         src: ['./src/js/*.js']
       }
     },
@@ -77,38 +75,98 @@ module.exports = function(grunt) {
         }
       }
     },
-    watch: {
-      gruntfile: {
-        files: '<%= jshint.gruntfile.src %>',
-        tasks: ['jshint:gruntfile']
-      },
-      lib_test: {
-        files: '<%= jshint.lib_test.src %>',
-        tasks: ['jshint:lib_test', 'qunit']
+    exec: {
+      todo: {
+        command: "grep -rn TODO ./src | sed '^s/ *(\/\/|\/\*|#) *TODO(:)? */- /g' | sed 's/:/      /g > ./TODO.md"
+      }, 
+      git: {
+        commit: {
+          command: 'git add -A && git commit'
+        },
+        push: {
+          command: 'git push origin master'
+        }
       }
+    }, 
+    bumpup: 'package.json', 
+    clean: {
+      tmp: ['./tmp/']
+    }, 
+    tagrelease: {
+      file: 'package.json', 
+      message: 'Version %version%', 
+      prefix: ''
     }
+
   });
 
-  grunt.loadNpmTasks('grunt-contrib-concat');
-  grunt.loadNpmTasks('grunt-contrib-sass');
-  grunt.loadNpmTasks('grunt-csso');
-  grunt.loadNpmTasks('grunt-contrib-jshint');
-  grunt.loadNpmTasks('grunt-mocha-phantomjs');
-  grunt.loadNpmTasks('grunt-contrib-uglify');
-  grunt.loadNpmTasks('grunt-contrib-imagemin');
-  grunt.loadNpmTasks('grunt-contrib-watch');
-  grunt.loadNpmTasks('grunt-contrib-livereload');
-  grunt.loadNpmTasks('grunt-bumpup');
-  grunt.loadNpmTasks('grunt-dox');
-  grunt.loadNpmTasks('grunt-notify');
-
+  grunt.loadNpmTasks('grunt-contrib-watch');            // done
+  grunt.loadNpmTasks('grunt-contrib-jshint');           // done
+  grunt.loadNpmTasks('grunt-contrib-concat');           // done
+  grunt.loadNpmTasks('grunt-contrib-uglify');           // done
+  grunt.loadNpmTasks('grunt-contrib-sass');             // done
+  grunt.loadNpmTasks('grunt-csso');                     // done
+  // grunt.loadNpmTasks('grunt-mocha-phantomjs');
+  // grunt.loadNpmTasks('grunt-contrib-imagemin');
+  grunt.loadNpmTasks('grunt-exec');                     // done
+  grunt.loadNpmTasks('grunt-bumpup');                   // done
+  grunt.loadNpmTasks('grunt-tagrelease');               // done
+  // grunt.loadNpmTasks('grunt-dox');
+  // grunt.loadNpmTasks('grunt-contrib-livereload');
+  grunt.loadNpmTasks('grunt-contrib-clean');            // done
+  grunt.loadNpmTasks('grunt-notify');                   // done (just works)
 
 
   // Default task.
-  grunt.registerTask('default', ['concat', 'js', 'css', 'dox', 'notify']);
+  grunt.registerTask('default', [
+    'jshint',     // validate js
+    'concat',     // test js
+    // 'mocha',      // combine js
+    'uglify',     // minify js
+    'sass', 
+    'csso', 
+    'shared'
+  ]);
 
-  grunt.registerTask('css', ['sass', 'csslint', 'csso']);
+  // js only
+  grunt.registerTask('js', [
+    'jshint',     // validate js
+    'mocha',      // test js
+    'concat',     // combine js
+    'uglify',     // minify js
+    'shared'
+  ]);
 
-  grunt.registerTask('js', ['jshint', 'mocha', 'uglify']);
+  // css only
+  grunt.registerTask('css', [
+    'sass', 
+    'csso', 
+    'shared'
+  ]);
+
+  grunt.registerTask('shared', [
+    'dox', 
+    'exec:todo', 
+    'bumpup:build', 
+    'clean'
+  ]);
+
+  // release 
+  grunt.registerTask('release', function (type) {
+    type = type ? type : 'patch';       // set the release type
+    grunt.task.run('jshint');           // validate js
+    grunt.task.run('mocha');            // test js
+    grunt.task.run('concat');           // combine js
+    grunt.task.run('uglify');           // minify js
+    grunt.task.run('sass');             // preprocess css
+    grunt.task.run('csso');             // minify and remove redundancy of css
+    grunt.task.run('dox');              // generate documentation
+    grunt.task.run('exec:todo');        // generate todo file
+    grunt.task.run('bumpup:' + type);   // bump up package version number
+    grunt.task.run('clean');            // delete all files in tmp folder
+    grunt.task.run('exec:git:commit');  // add and commit changes
+    grunt.task.run('tagrelease');       // tag commit with version number
+    grunt.task.run('exec:git:push');    // push to remote origin on master
+  });
 
 };
