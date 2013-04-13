@@ -19,12 +19,16 @@ HTMLElement.prototype.forEach = function(fn) {
     fn(this);
 };
 
+Number.prototype.clamp = function(min, max) {
+    return Math.min(Math.max(this, min), max);
+};
+
 var J = {};
 
 // returns browser's transition end event
 J.Event = {
     transitionEnd: function () {
-    	var domStyle = document.body.style;
+        var domStyle = document.body.style;
         if ('webkitTransition' in domStyle) {
             return 'webkitTransitionEnd';
         }
@@ -37,5 +41,11 @@ J.Event = {
         else {
             return 'transitionend';
         }
+    }
+};
+
+J.Math = {
+    randomIntWithinRange: function (min, max) {
+        return Math.floor(Math.random() * (max - min + 1)) + min;
     }
 };

@@ -21,6 +21,12 @@ module.exports = function(grunt) {
         tasks: ['css']
       }
     }, 
+    concat: {
+      js: {
+        src: ['./src/js/*.js'],
+        dest: './tmp/master.concat.js'
+      }
+    },
     jshint: {
       options: {
         curly: true,
@@ -34,19 +40,21 @@ module.exports = function(grunt) {
         unused: true,
         boss: true,
         eqnull: true,
-        browser: true,
+        browser: true, 
+        devel: true, 
         globals: {}
       },
       files: {
-        src: ['./src/js/*.js']
+        src: ['./tmp/master.concat.js']
       }
     },
-    concat: {
-      js: {
-        src: ['./src/js/*.js'],
-        dest: './tmp/master.concat.js'
+    mocha: {
+      all: ['./test/*.html'], 
+      options: {
+        reporter: 'Nyan', 
+        run: true
       }
-    },
+    }, 
     uglify: {
       options: {
         banner: '<%= banner %>'
@@ -56,11 +64,18 @@ module.exports = function(grunt) {
           // sourceMap: 'path/to/source-map.js'
         }, 
         files: {
-          src: './tmp/master.concat.js',
-          dest: './dist/scripts/master.min.js'
+          './dist/scripts/master.min.js': ['./tmp/master.concat.js']
         }
       }
     },
+    jsdoc : {
+      dist : {
+        src: ['./src/js/*.js'], 
+        options: {
+          destination: 'docs'
+        }
+      }
+    }, 
     sass: {
       dist: {
         files: {
@@ -71,13 +86,13 @@ module.exports = function(grunt) {
     csso: {
       dist: {
         files: {
-          './tmp/csso.css': './tmp/sass.css'
+          './dist/styles/master.min.css': './tmp/sass.css'
         }
       }
     },
     exec: {
       todo: {
-        command: "grep -rn TODO ./src | sed '^s/ *(\/\/|\/\*|#) *TODO(:)? */- /g' | sed 's/:/      /g > ./TODO.md"
+        command: "grep -rn TODO ./src | sed 's/\\s*\\/\\/ TODO: /- /g' | sed 's/:/      /g' > ./TODO.txt"
       }, 
       git: {
         commit: {
@@ -90,7 +105,7 @@ module.exports = function(grunt) {
     }, 
     bumpup: 'package.json', 
     clean: {
-      tmp: ['./tmp/']
+      tmp: ['./tmp/*']
     }, 
     tagrelease: {
       file: 'package.json', 
@@ -102,16 +117,16 @@ module.exports = function(grunt) {
 
   grunt.loadNpmTasks('grunt-contrib-watch');            // done
   grunt.loadNpmTasks('grunt-contrib-jshint');           // done
+  grunt.loadNpmTasks('grunt-mocha');
   grunt.loadNpmTasks('grunt-contrib-concat');           // done
   grunt.loadNpmTasks('grunt-contrib-uglify');           // done
   grunt.loadNpmTasks('grunt-contrib-sass');             // done
   grunt.loadNpmTasks('grunt-csso');                     // done
-  // grunt.loadNpmTasks('grunt-mocha-phantomjs');
   // grunt.loadNpmTasks('grunt-contrib-imagemin');
   grunt.loadNpmTasks('grunt-exec');                     // done
   grunt.loadNpmTasks('grunt-bumpup');                   // done
   grunt.loadNpmTasks('grunt-tagrelease');               // done
-  // grunt.loadNpmTasks('grunt-dox');
+  grunt.loadNpmTasks('grunt-jsdoc');                    // done
   // grunt.loadNpmTasks('grunt-contrib-livereload');
   grunt.loadNpmTasks('grunt-contrib-clean');            // done
   grunt.loadNpmTasks('grunt-notify');                   // done (just works)
@@ -119,10 +134,11 @@ module.exports = function(grunt) {
 
   // Default task.
   grunt.registerTask('default', [
+    'concat',     // combine js
     'jshint',     // validate js
-    'concat',     // test js
-    // 'mocha',      // combine js
+    'mocha',      // test js
     'uglify',     // minify js
+    // 'jsdoc', 
     'sass', 
     'csso', 
     'shared'
@@ -130,10 +146,11 @@ module.exports = function(grunt) {
 
   // js only
   grunt.registerTask('js', [
+    'concat',     // combine js
     'jshint',     // validate js
     'mocha',      // test js
-    'concat',     // combine js
     'uglify',     // minify js
+    // 'jsdoc', 
     'shared'
   ]);
 
@@ -145,7 +162,6 @@ module.exports = function(grunt) {
   ]);
 
   grunt.registerTask('shared', [
-    'dox', 
     'exec:todo', 
     'bumpup:build', 
     'clean'
@@ -154,13 +170,13 @@ module.exports = function(grunt) {
   // release 
   grunt.registerTask('release', function (type) {
     type = type ? type : 'patch';       // set the release type
+    grunt.task.run('concat');           // combine js
     grunt.task.run('jshint');           // validate js
     grunt.task.run('mocha');            // test js
-    grunt.task.run('concat');           // combine js
     grunt.task.run('uglify');           // minify js
     grunt.task.run('sass');             // preprocess css
     grunt.task.run('csso');             // minify and remove redundancy of css
-    grunt.task.run('dox');              // generate documentation
+    grunt.task.run('jsdoc');            // generate documentation
     grunt.task.run('exec:todo');        // generate todo file
     grunt.task.run('bumpup:' + type);   // bump up package version number
     grunt.task.run('clean');            // delete all files in tmp folder
