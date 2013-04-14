@@ -29,20 +29,22 @@ module.exports = function(grunt) {
     },
     jshint: {
       options: {
+        bitwise: true, 
+        boss: true,
+        browser: true, 
+        camelcase: true, 
         curly: true,
+        devel: true, 
         eqeqeq: true,
+        eqnull: true,
         immed: true,
+        indent: 4, 
         latedef: true,
         newcap: true,
         noarg: true,
         sub: true,
         undef: true,
-        unused: true,
-        boss: true,
-        eqnull: true,
-        browser: true, 
-        devel: true, 
-        globals: {}
+        unused: true
       },
       files: {
         src: ['./tmp/master.concat.js']
@@ -105,7 +107,8 @@ module.exports = function(grunt) {
     }, 
     bumpup: 'package.json', 
     clean: {
-      tmp: ['./tmp/*']
+      js: ['./tmp/*.js'], 
+      css: ['./tmp/*.css']
     }, 
     tagrelease: {
       file: 'package.json', 
@@ -115,71 +118,57 @@ module.exports = function(grunt) {
 
   });
 
-  grunt.loadNpmTasks('grunt-contrib-watch');            // done
-  grunt.loadNpmTasks('grunt-contrib-jshint');           // done
+  grunt.loadNpmTasks('grunt-contrib-watch');         
+  grunt.loadNpmTasks('grunt-contrib-concat');        
+  grunt.loadNpmTasks('grunt-contrib-jshint');        
   grunt.loadNpmTasks('grunt-mocha');
-  grunt.loadNpmTasks('grunt-contrib-concat');           // done
-  grunt.loadNpmTasks('grunt-contrib-uglify');           // done
-  grunt.loadNpmTasks('grunt-contrib-sass');             // done
-  grunt.loadNpmTasks('grunt-csso');                     // done
+  grunt.loadNpmTasks('grunt-contrib-uglify');        
+  grunt.loadNpmTasks('grunt-contrib-sass');          
+  grunt.loadNpmTasks('grunt-csso');                  
+  grunt.loadNpmTasks('grunt-contrib-clean');         
   // grunt.loadNpmTasks('grunt-contrib-imagemin');
-  grunt.loadNpmTasks('grunt-exec');                     // done
-  grunt.loadNpmTasks('grunt-bumpup');                   // done
-  grunt.loadNpmTasks('grunt-tagrelease');               // done
-  grunt.loadNpmTasks('grunt-jsdoc');                    // done
+  grunt.loadNpmTasks('grunt-exec');                  
+  grunt.loadNpmTasks('grunt-jsdoc');                 
+  grunt.loadNpmTasks('grunt-bumpup');                
+  grunt.loadNpmTasks('grunt-tagrelease');            
   // grunt.loadNpmTasks('grunt-contrib-livereload');
-  grunt.loadNpmTasks('grunt-contrib-clean');            // done
-  grunt.loadNpmTasks('grunt-notify');                   // done (just works)
+  grunt.loadNpmTasks('grunt-notify');                
 
 
-  // Default task.
+  // Default task 
   grunt.registerTask('default', [
-    'concat',     // combine js
-    'jshint',     // validate js
-    'mocha',      // test js
-    'uglify',     // minify js
-    // 'jsdoc', 
-    'sass', 
-    'csso', 
-    'shared'
+    'js', 
+    'css' 
   ]);
 
   // js only
   grunt.registerTask('js', [
-    'concat',     // combine js
-    'jshint',     // validate js
-    'mocha',      // test js
-    'uglify',     // minify js
-    // 'jsdoc', 
-    'shared'
+    'concat',     // combine 
+    'jshint',     // validate 
+    'mocha',      // test 
+    'uglify',     // minify 
+    'clean:js'    // clean files in tmp
   ]);
 
   // css only
   grunt.registerTask('css', [
-    'sass', 
-    'csso', 
-    'shared'
+    'sass',       // preprocessor
+    'csso',       // minify and remove redundancy
+    'clean:css'   // clean files in tmp
   ]);
 
-  grunt.registerTask('shared', [
-    'exec:todo', 
-    'bumpup:build', 
-    'clean'
+  grunt.registerTask('todo', [
+    'exec:todo'   // generate todo file
   ]);
 
   // release 
   grunt.registerTask('release', function (type) {
     type = type ? type : 'patch';       // set the release type
-    grunt.task.run('concat');           // combine js
-    grunt.task.run('jshint');           // validate js
-    grunt.task.run('mocha');            // test js
-    grunt.task.run('uglify');           // minify js
-    grunt.task.run('sass');             // preprocess css
-    grunt.task.run('csso');             // minify and remove redundancy of css
+    grunt.task.run('js');               
+    grunt.task.run('css');             
+    grunt.task.run('todo');             
     grunt.task.run('jsdoc');            // generate documentation
-    grunt.task.run('exec:todo');        // generate todo file
     grunt.task.run('bumpup:' + type);   // bump up package version number
-    grunt.task.run('clean');            // delete all files in tmp folder
     grunt.task.run('exec:git:commit');  // add and commit changes
     grunt.task.run('tagrelease');       // tag commit with version number
     grunt.task.run('exec:git:push');    // push to remote origin on master
